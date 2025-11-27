@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -262,12 +262,14 @@ function TravelSection({ countries, loading, lang, onCountryClick }: { countries
   );
 }
 
-function CurrencyConverter({ lang }: { lang: 'az' | 'en' | 'ru' }) {
+function CurrencyConverter({ lang, isVisible }: { lang: 'az' | 'en' | 'ru', isVisible: boolean }) {
   const [amount, setAmount] = useState('100');
   const [fromCurrency, setFromCurrency] = useState('AZN');
   const [toCurrency, setToCurrency] = useState('USD');
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { isReadingMode, speakText } = useReadingMode();
+  const converterRef = useRef<HTMLDivElement>(null);
 
   const rates: { [key: string]: number } = {
       USD: 0.59, TRY: 19.53, RUB: 54.28, AED: 2.16, GEL: 1.67, EUR: 0.55, GBP: 0.46, JPY: 92.89, CHF: 0.53,
@@ -283,6 +285,10 @@ function CurrencyConverter({ lang }: { lang: 'az' | 'en' | 'ru' }) {
         en: { title: 'Currency Converter', amount: 'Amount', from: 'From', to: 'To', negative_error: 'Cannot convert a negative value.' },
         ru: { title: 'Конвертер валют', amount: 'Сумма', from: 'Из', to: 'В', negative_error: 'Нельзя конвертировать отрицательное значение.' },
     }[lang];
+
+    const handleSpeak = (text: string) => {
+        if (text) speakText(text, lang === 'az' ? 'tr-TR' : `${lang}-${lang.toUpperCase()}`);
+    }
   
   const handleConversion = useCallback(() => {
     const numericAmount = parseFloat(amount);
@@ -320,18 +326,25 @@ function CurrencyConverter({ lang }: { lang: 'az' | 'en' | 'ru' }) {
   useEffect(() => {
     handleConversion();
   }, [handleConversion]);
+  
+  useEffect(() => {
+    if (isVisible && converterRef.current) {
+        converterRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isVisible])
 
   const currencyOptions = Object.keys(rates).sort().map(currency => (
     <SelectItem key={currency} value={currency}>{currency}</SelectItem>
   ));
   
+  if (!isVisible) return null;
 
   return (
-    <Card className="p-8 bg-card/50 border-border/50">
-      <h3 className="mb-4 text-2xl font-bold text-center">{t.title}</h3>
+    <Card ref={converterRef} id="currency-converter" className="p-8 bg-card/50 border-border/50 scroll-mt-24">
+      <h3 className={cn("mb-4 text-2xl font-bold text-center", isReadingMode && 'cursor-pointer hover:bg-muted/50')} onMouseEnter={() => handleSpeak(t.title)}>{t.title}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center relative">
         <div>
-          <label className="text-sm text-muted-foreground">{t.amount}</label>
+          <label className={cn("text-sm text-muted-foreground", isReadingMode && 'cursor-pointer hover:bg-muted/50')} onMouseEnter={() => handleSpeak(t.amount)}>{t.amount}</label>
           <Input 
             placeholder={t.amount}
             type="number"
@@ -340,15 +353,15 @@ function CurrencyConverter({ lang }: { lang: 'az' | 'en' | 'ru' }) {
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground">{t.from}</label>
+            <div onMouseEnter={() => handleSpeak(t.from)}>
+              <label className={cn("text-sm text-muted-foreground", isReadingMode && 'cursor-pointer hover:bg-muted/50')}>{t.from}</label>
               <Select value={fromCurrency} onValueChange={setFromCurrency}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{currencyOptions}</SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-sm text-muted-foreground">{t.to}</label>
+            <div onMouseEnter={() => handleSpeak(t.to)}>
+              <label className={cn("text-sm text-muted-foreground", isReadingMode && 'cursor-pointer hover:bg-muted/50')}>{t.to}</label>
               <Select value={toCurrency} onValueChange={setToCurrency}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{currencyOptions}</SelectContent>
@@ -359,9 +372,9 @@ function CurrencyConverter({ lang }: { lang: 'az' | 'en' | 'ru' }) {
             <Repeat className="h-4 w-4" />
         </Button>
       </div>
-       {error && <p className="text-destructive text-sm mt-8 text-center font-semibold">{error}</p>}
+       {error && <p className={cn("text-destructive text-sm mt-8 text-center font-semibold", isReadingMode && 'cursor-pointer hover:bg-muted/50')} onMouseEnter={() => handleSpeak(error)}>{error}</p>}
       {result && !error && (
-        <div className="mt-8 text-center text-2xl font-bold text-primary">
+        <div className={cn("mt-8 text-center text-2xl font-bold text-primary", isReadingMode && 'cursor-pointer hover:bg-muted/50')} onMouseEnter={() => handleSpeak(result)}>
             {result}
         </div>
       )}
@@ -372,6 +385,7 @@ function CurrencyConverter({ lang }: { lang: 'az' | 'en' | 'ru' }) {
 export default function HomePage() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showConverter, setShowConverter] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
   const auth = useAuth();
@@ -426,6 +440,18 @@ export default function HomePage() {
     getCountries();
   }, [firestore, toast]);
   
+   useEffect(() => {
+    const handleShowConverter = () => {
+      setShowConverter(true);
+    };
+
+    window.addEventListener('show-converter', handleShowConverter);
+
+    return () => {
+      window.removeEventListener('show-converter', handleShowConverter);
+    };
+  }, []);
+
   const handleCountryClick = (href: string) => {
     triggerAnimation({ icon: Globe, onAnimationEnd: () => router.push(href) });
   };
@@ -459,7 +485,7 @@ export default function HomePage() {
 
         <TravelSection countries={countries} loading={loading} lang={lang} onCountryClick={handleCountryClick} />
 
-        <CurrencyConverter lang={lang} />
+        <CurrencyConverter lang={lang} isVisible={showConverter} />
       </main>
     </>
   );
