@@ -13,8 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { addFeedback } from '@/lib/firebase-actions';
 import { Loader2, Headset } from 'lucide-react';
 import { useFirestore } from '@/firebase';
-import { useAnimation } from '../app/animation-provider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type Lang = 'az' | 'en' | 'ru';
 
@@ -91,10 +89,12 @@ const createFormSchema = (lang: Lang) => z.object({
   message: z.string().min(10, { message: translations[lang].validation.message }),
 });
 
+interface ContactUsProps {
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+}
 
-export default function ContactUs() {
-  const [isOpen, setIsOpen] = useState(false);
-  const { triggerAnimation } = useAnimation();
+export default function ContactUs({ isOpen, onOpenChange }: ContactUsProps) {
   const [lang, setLang] = useState<Lang>('az');
 
   useEffect(() => {
@@ -145,7 +145,7 @@ export default function ContactUs() {
         title: t.successTitle,
         description: t.successDescription,
       });
-      setIsOpen(false);
+      onOpenChange(false);
       form.reset();
     } catch (error) {
       toast({
@@ -156,29 +156,8 @@ export default function ContactUs() {
     }
   }
 
-  const handleTriggerClick = () => {
-    triggerAnimation({ 
-        icon: Headset, 
-        onAnimationEnd: () => setIsOpen(true)
-    });
-  }
-
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={handleTriggerClick}>
-                  <Headset className="h-5 w-5" />
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{t.contact_us}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>{t.contact_us}</DialogTitle>
