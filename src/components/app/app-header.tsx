@@ -1,13 +1,17 @@
 import Link from 'next/link';
 import { Button } from '../ui/button';
-import { Globe, Languages, Check, ChevronDown, Headset, Ear, PenSquare, Wand2 } from 'lucide-react';
+import { Globe, Languages, Check, ChevronDown, Headset, Ear, PenSquare, Wand2, Menu, Sun, Moon, Laptop, CircleDollarSign } from 'lucide-react';
 import ContactUs from './contact-us';
-import { ThemeToggle } from './theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { cn } from '@/lib/utils';
 import { useAnimation } from '../app/animation-provider';
@@ -16,11 +20,12 @@ import { useReadingMode } from './reading-mode-provider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import Image from 'next/image';
 import AiRecommender from './ai-recommender';
+import { useTheme } from 'next-themes';
 
-interface LanguageSwitcherProps {
-  currentLang: 'az' | 'en' | 'ru';
-  setLang: (lang: 'az' | 'en' | 'ru') => void;
-  tooltipText: string;
+interface AppHeaderProps {
+    isAdmin?: boolean;
+    lang?: 'az' | 'en' | 'ru';
+    setLang?: (lang: 'az' | 'en' | 'ru') => void;
 }
 
 const languages = [
@@ -29,95 +34,6 @@ const languages = [
     { code: 'ru', name: 'Русский', flag: 'https://flagcdn.com/w40/ru.png' },
 ] as const;
 
-
-const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ currentLang, setLang, tooltipText }) => {
-  const { triggerAnimation } = useAnimation();
-  const selectedLanguage = languages.find(l => l.code === currentLang);
-
-  const handleLanguageChange = (e: Event, langCode: 'az' | 'en' | 'ru') => {
-      e.preventDefault();
-      triggerAnimation({
-          icon: Languages,
-          onAnimationEnd: () => setLang(langCode)
-      });
-  }
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                  <Button variant="ghost">
-                      {selectedLanguage && <Image src={selectedLanguage.flag} alt={`${selectedLanguage.name} flag`} width={24} height={18} className="mr-2 rounded-sm" />}
-                      {selectedLanguage?.name}
-                      <ChevronDown className="ml-1 h-4 w-4 opacity-70" />
-                      <span className="sr-only">Dili dəyişdir</span>
-                  </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                  {languages.map((lang) => (
-                  <DropdownMenuItem key={lang.code} onSelect={(e) => handleLanguageChange(e, lang.code)}>
-                      <span className={cn("flex w-full items-center justify-between", currentLang === lang.code && "font-bold")}>
-                          <span className='flex items-center'>
-                            <Image src={lang.flag} alt={`${lang.name} flag`} width={20} height={15} className="mr-2 rounded-sm" />
-                            {lang.name}
-                          </span>
-                          {currentLang === lang.code && <Check className="h-4 w-4" />}
-                      </span>
-                  </DropdownMenuItem>
-                  ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TooltipTrigger>
-        <TooltipContent>
-            <p>{tooltipText}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-};
-
-const ReadingModeToggle = ({tooltipText}: {tooltipText: string}) => {
-    const { isReadingMode, toggleReadingMode } = useReadingMode();
-    const { triggerAnimation } = useAnimation();
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        triggerAnimation({
-            icon: Ear,
-            onAnimationEnd: toggleReadingMode
-        });
-    }
-
-    return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        aria-label="Toggle Reading Mode"
-                        onClick={handleClick}
-                        className={cn(isReadingMode && 'bg-accent text-accent-foreground')}
-                    >
-                        <Ear className="h-6 w-6" />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>{tooltipText}</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
-    )
-}
-
-interface AppHeaderProps {
-    isAdmin?: boolean;
-    lang?: 'az' | 'en' | 'ru';
-    setLang?: (lang: 'az' | 'en' | 'ru') => void;
-}
-
 const headerTranslations = {
     az: {
         change_lang: 'Dili dəyişdir',
@@ -125,7 +41,11 @@ const headerTranslations = {
         communication_aid: 'Ünsiyyət Köməkçisi',
         reading_mode: 'Oxuma Modu',
         theme: 'Tema Rəngi',
-        ai_recommender: 'AI Köməkçi'
+        ai_recommender: 'AI Köməkçi',
+        currency_converter: 'Valyuta Konvertoru',
+        light: 'İşıqlı',
+        dark: 'Tünd',
+        system: 'Sistem',
     },
     en: {
         change_lang: 'Change Language',
@@ -133,7 +53,11 @@ const headerTranslations = {
         communication_aid: 'Communication Aid',
         reading_mode: 'Reading Mode',
         theme: 'Theme Color',
-        ai_recommender: 'AI Recommender'
+        ai_recommender: 'AI Recommender',
+        currency_converter: 'Currency Converter',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System',
     },
     ru: {
         change_lang: 'Изменить язык',
@@ -141,7 +65,11 @@ const headerTranslations = {
         communication_aid: 'Помощник по общению',
         reading_mode: 'Режим чтения',
         theme: 'Цвет темы',
-        ai_recommender: 'AI Рекомендатор'
+        ai_recommender: 'AI Рекомендатор',
+        currency_converter: 'Конвертер валют',
+        light: 'Светлая',
+        dark: 'Темная',
+        system: 'Системная',
     }
 }
 
@@ -149,7 +77,11 @@ const headerTranslations = {
 const AppHeader = ({ isAdmin = false, lang = 'az', setLang }: AppHeaderProps) => {
   const t = headerTranslations[lang];
   const [isRecommenderOpen, setIsRecommenderOpen] = useState(false);
+  const [isContactUsOpen, setIsContactUsOpen] = useState(false);
+  
   const { triggerAnimation } = useAnimation();
+  const { isReadingMode, toggleReadingMode } = useReadingMode();
+  const { setTheme } = useTheme();
 
   const handleAiRecommenderClick = () => {
     triggerAnimation({
@@ -157,6 +89,48 @@ const AppHeader = ({ isAdmin = false, lang = 'az', setLang }: AppHeaderProps) =>
         onAnimationEnd: () => setIsRecommenderOpen(true)
     });
   }
+  
+  const handleContactUsClick = () => {
+    triggerAnimation({
+        icon: Headset,
+        onAnimationEnd: () => setIsContactUsOpen(true)
+    });
+  }
+
+  const handleShowConverter = () => {
+    // Dispatch a custom event that the homepage can listen to
+    window.dispatchEvent(new CustomEvent('show-converter'));
+  };
+  
+   const handleLanguageChange = (e: Event, langCode: 'az' | 'en' | 'ru') => {
+      if (!setLang) return;
+      e.preventDefault();
+      triggerAnimation({
+          icon: Languages,
+          onAnimationEnd: () => setLang(langCode)
+      });
+  }
+  
+  const handleReadingModeClick = (e: Event) => {
+    e.preventDefault();
+    triggerAnimation({
+        icon: Ear,
+        onAnimationEnd: toggleReadingMode
+    });
+  }
+
+  const handleThemeChange = (newTheme: string) => {
+    let Icon;
+    if (newTheme === 'light') Icon = Sun;
+    else if (newTheme === 'dark') Icon = Moon;
+    else Icon = Laptop;
+    
+    triggerAnimation({
+        icon: Icon,
+        onAnimationEnd: () => setTheme(newTheme)
+    });
+  };
+
 
   return (
     <>
@@ -178,45 +152,100 @@ const AppHeader = ({ isAdmin = false, lang = 'az', setLang }: AppHeaderProps) =>
                 <ThemeToggle tooltipText={t.theme} />
             </div>
           ) : (
-            <div className='flex items-center gap-1'>
-                {lang && setLang && <LanguageSwitcher currentLang={lang} setLang={setLang} tooltipText={t.change_lang} />}
-                <ContactUs />
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={handleAiRecommenderClick}>
-                                <Wand2 className="h-6 w-6" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{t.ai_recommender}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button asChild variant="ghost" size="icon" aria-label="Communication Aid">
-                                <Link href="/communication-aid">
-                                    <PenSquare className="h-6 w-6" />
-                                </Link>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{t.communication_aid}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <ReadingModeToggle tooltipText={t.reading_mode} />
-                <ThemeToggle tooltipText={t.theme} />
-            </div>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <Menu className="h-6 w-6" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={handleContactUsClick}>
+                        <Headset className="mr-2" />
+                        <span>{t.contact_us}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleAiRecommenderClick}>
+                        <Wand2 className="mr-2" />
+                        <span>{t.ai_recommender}</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onSelect={handleShowConverter}>
+                        <CircleDollarSign className="mr-2" />
+                        <span>{t.currency_converter}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                       <Link href="/communication-aid">
+                            <PenSquare className="mr-2" />
+                            <span>{t.communication_aid}</span>
+                       </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleReadingModeClick} className={cn(isReadingMode && 'bg-accent')}>
+                        <Ear className="mr-2" />
+                        <span>{t.reading_mode}</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <Languages className="mr-2" />
+                            <span>{t.change_lang}</span>
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuPortal>
+                             <DropdownMenuSubContent>
+                                {languages.map((langItem) => (
+                                  <DropdownMenuItem key={langItem.code} onSelect={(e) => handleLanguageChange(e, langItem.code)}>
+                                      <div className={cn("flex w-full items-center justify-between", lang === langItem.code && "font-bold")}>
+                                          <div className='flex items-center'>
+                                            <Image src={langItem.flag} alt={`${langItem.name} flag`} width={20} height={15} className="mr-2 rounded-sm" />
+                                            {langItem.name}
+                                          </div>
+                                          {lang === langItem.code && <Check className="h-4 w-4" />}
+                                      </div>
+                                  </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                            <Sun className="mr-2 h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                            <Moon className="absolute mr-2 h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                            <span>{t.theme}</span>
+                        </DropdownMenuSubTrigger>
+                         <DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => handleThemeChange('light')}>
+                                  <Sun className="mr-2 h-4 w-4" />
+                                  <span>{t.light}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleThemeChange('dark')}>
+                                  <Moon className="mr-2 h-4 w-4" />
+                                  <span>{t.dark}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleThemeChange('system')}>
+                                  <Laptop className="mr-2 h-4 w-4" />
+                                  <span>{t.system}</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                </DropdownMenuContent>
+             </DropdownMenu>
           )}
         </nav>
       </div>
     </header>
-    {!isAdmin && <AiRecommender isOpen={isRecommenderOpen} onOpenChange={setIsRecommenderOpen} />}
+    {!isAdmin && (
+        <>
+            <AiRecommender isOpen={isRecommenderOpen} onOpenChange={setIsRecommenderOpen} />
+            <ContactUs isOpen={isContactUsOpen} onOpenChange={setIsContactUsOpen} />
+        </>
+    )}
     </>
   );
 };
 
 export default AppHeader;
+
+    
