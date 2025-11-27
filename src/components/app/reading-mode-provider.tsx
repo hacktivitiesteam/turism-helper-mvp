@@ -12,6 +12,33 @@ interface ReadingModeContextType {
 
 const ReadingModeContext = createContext<ReadingModeContextType | undefined>(undefined);
 
+type Lang = 'az' | 'en' | 'ru';
+
+const toastTranslations = {
+    az: {
+        unsupportedTitle: "Dəstəklənməyən Brauzer",
+        unsupportedDesc: "Brauzeriniz mətnin səsləndirilməsi funksiyasını dəstəkləmir.",
+        enabledTitle: "Oxuma Modu Aktiv Edildi",
+        enabledDesc: "Məzmunu dinləmək üçün siçan göstəricisini mətnlərin üzərinə gətirin.",
+        disabledTitle: "Oxuma Modu Deaktiv Edildi",
+    },
+    en: {
+        unsupportedTitle: "Unsupported Browser",
+        unsupportedDesc: "Your browser does not support text-to-speech.",
+        enabledTitle: "Reading Mode Enabled",
+        enabledDesc: "Hover over text to listen to the content.",
+        disabledTitle: "Reading Mode Disabled",
+    },
+    ru: {
+        unsupportedTitle: "Неподдерживаемый браузер",
+        unsupportedDesc: "Ваш браузер не поддерживает функцию преобразования текста в речь.",
+        enabledTitle: "Режим чтения включен",
+        enabledDesc: "Наведите курсор на текст, чтобы прослушать содержимое.",
+        disabledTitle: "Режим чтения отключен",
+    }
+};
+
+
 export function ReadingModeProvider({ children }: { children: ReactNode }) {
   const [isReadingMode, setIsReadingMode] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
@@ -24,11 +51,14 @@ export function ReadingModeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleReadingMode = useCallback(() => {
+    const currentLang = (localStorage.getItem('app-lang') as Lang) || 'az';
+    const t = toastTranslations[currentLang];
+
     if (!isSupported) {
         toast({
             variant: "destructive",
-            title: "Dəstəklənməyən Brauzer",
-            description: "Brauzeriniz mətnin səsləndirilməsi funksiyasını dəstəkləmir.",
+            title: t.unsupportedTitle,
+            description: t.unsupportedDesc,
         });
         return;
     }
@@ -38,8 +68,8 @@ export function ReadingModeProvider({ children }: { children: ReactNode }) {
             window.speechSynthesis.cancel(); // Turn off any ongoing speech
         }
         toast({
-            title: `Oxuma Modu ${newState ? 'Aktiv Edildi' : 'Deaktiv Edildi'}`,
-            description: newState ? 'Məzmunu dinləmək üçün siçan göstəricisini mətnlərin üzərinə gətirin.' : '',
+            title: newState ? t.enabledTitle : t.disabledTitle,
+            description: newState ? t.enabledDesc : '',
         });
         return newState;
     });
@@ -72,3 +102,5 @@ export function useReadingMode() {
   }
   return context;
 }
+
+    
